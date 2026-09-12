@@ -6,7 +6,7 @@
 **Assigned Locality**: Mg Road  
 **API Key**: `IVY26-DD7ADA724ED4`  
 **Live Demo**: [https://ivy-homes-assignment.vercel.app](https://ivy-homes-assignment.vercel.app)  
-**Repository**: [https://github.com/kartikkumar/ivy-assignment](https://github.com/kartikkumar/ivy-assignment)
+**Repository**: [https://github.com/kartik1003-afs/ivy-assignment](https://github.com/kartik1003-afs/ivy-assignment)
 
 ---
 
