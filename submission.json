@@ -1,0 +1,246 @@
+{
+  "api_key": "IVY26-DD7ADA724ED4",
+  "candidate": {
+    "name": "Kartik Kumar",
+    "email": "20234057@mnnit.ac.in",
+    "repo_url": "https://github.com/kartikkumar/ivy-assignment",
+    "demo_url": "https://ivy-homes-assignment.vercel.app"
+  },
+  "answers": {
+    "total_listing_records": 3500,
+    "unique_properties": 3412,
+    "active_listings": 3456,
+    "corrupt_listing_ids": [
+      "100-6000323",
+      "100-6000338",
+      "100-6001461",
+      "100-6001968",
+      "100-6002071",
+      "DWE-6000010",
+      "DWE-6001015",
+      "DWE-6002663",
+      "DWE-6002846",
+      "MAG-6000453",
+      "MAG-6000527",
+      "MAG-6000631",
+      "MAG-6001135",
+      "MAG-6002834",
+      "SQU-6001477",
+      "SQU-6003044",
+      "ZER-6000468",
+      "ZER-6000669"
+    ],
+    "total_monthly_rent": 4612400,
+    "avg_price_per_sqft_2bhk": 26861.1,
+    "costliest_project": {
+      "project_id": "P60060",
+      "price_max_inr": 58300000
+    },
+    "listings_last_7_days": 129,
+    "fake_listing_ids": [
+      "100-6000578",
+      "100-6000678",
+      "100-6001599",
+      "MAG-6002472",
+      "MAG-6002941",
+      "SQU-6000395"
+    ],
+    "projects_with_wrong_listing_count": 295
+  },
+  "findings": [
+    {
+      "endpoint": "*",
+      "category": "auth",
+      "documented": "API key passed as query parameter ?api_key=IVY26-XXXXXXXXXXXX",
+      "actual": "API key query parameter is rejected (401); X-API-Key HTTP header must be supplied on every request",
+      "how_found": "Called GET /v1/listings?api_key=... and received HTTP 401 with detail 'send your key in the X-API-Key request header'",
+      "impact": "All API calls fail with 401 if query parameter is used as documented",
+      "evidence": []
+    },
+    {
+      "endpoint": "/auth/login",
+      "category": "auth",
+      "documented": "Returns token key in response body, valid for 86400 seconds (24 hours) with no refresh flow",
+      "actual": "Returns access_token key, expires_in is 900 seconds (15 minutes), and includes refresh_token with refresh_url /auth/refresh",
+      "how_found": "Inspected JSON response payload of POST /auth/login",
+      "impact": "Applications expecting 'token' property break, and sessions expire after 15 minutes unless refresh flow is implemented",
+      "evidence": []
+    },
+    {
+      "endpoint": "/auth/refresh",
+      "category": "undocumented_endpoint",
+      "documented": "No token refresh flow exists in API documentation",
+      "actual": "POST /auth/refresh endpoint exists and accepts refresh_token to issue a new access_token",
+      "how_found": "Observed refresh_url in POST /auth/login response and tested POST /auth/refresh",
+      "impact": "Enables seamless session maintenance without requiring re-entering user password",
+      "evidence": []
+    },
+    {
+      "endpoint": "/auth/logout",
+      "category": "auth",
+      "documented": "Invalidates the current token server side",
+      "actual": "Tokens are stateless JWTs; endpoint returns note that tokens must be discarded client side",
+      "how_found": "Called POST /auth/logout and received {'ok': True, 'note': 'tokens are stateless; discard them client side'}",
+      "impact": "Server does not track token blacklists; client application must purge token locally",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "pagination",
+      "documented": "Pagination uses page and limit parameters, with page being 1-indexed. Response contains page and page_size.",
+      "actual": "The page parameter is ignored. Pagination uses offset and limit parameters. Response contains offset, limit, count, total, and has_more.",
+      "how_found": "Passed page=2 with limit=10 and received identical results as page=1 (offset 0); passing offset=10 returned page 2 results.",
+      "impact": "Client applications using page parameter get stuck on the first page endlessly",
+      "evidence": [
+        "100-6000047",
+        "SQU-6002035"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "pagination",
+      "documented": "Limit parameter maximum is 200",
+      "actual": "Limit parameter is capped at 50 server-side",
+      "how_found": "Requested limit=200 and observed response limit and count returned 50 items",
+      "impact": "Fetching complete dataset requires 4x more requests than documented",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "completeness",
+      "documented": "Returns active sale listings; inactive, expired and withdrawn listings are excluded server side",
+      "actual": "Returns inactive listings where is_live is false",
+      "how_found": "Filtered fetched listings by is_live field and found 44 inactive listings (is_live=False)",
+      "impact": "Frontend must explicitly filter by is_live=true to avoid displaying unavailable listings",
+      "evidence": [
+        "100-6000047",
+        "ZER-6000056",
+        "DWE-6000210",
+        "MAG-6000203"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "pagination",
+      "documented": "total field in response indicates exact number of records matching filters and can be used to determine pagination end",
+      "actual": "total field in response body reports 3318 listings, but 3500 total listings exist and can be retrieved by paging past 3318",
+      "how_found": "Paged past offset 3318 while has_more was true until offset 3500 where has_more became false",
+      "impact": "Applications relying on total count stop fetching early and miss 182 listing records",
+      "evidence": [
+        "100-6003475",
+        "100-6003487",
+        "DWE-6003495"
+      ]
+    },
+    {
+      "endpoint": "/v1/listing/{id}",
+      "category": "missing_endpoint",
+      "documented": "Endpoint path for single listing is GET /v1/listing/{listing_id}",
+      "actual": "GET /v1/listing/{id} returns HTTP 404 Not Found. The correct endpoint is plural GET /v1/listings/{id}",
+      "how_found": "Called GET /v1/listing/100-6000042 (404) vs GET /v1/listings/100-6000042 (200 OK)",
+      "impact": "Listing detail page requests fail if written as documented",
+      "evidence": [
+        "100-6000042"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings/{id}/similar",
+      "category": "missing_endpoint",
+      "documented": "Returns up to ten comparable listings via GET /v1/listings/{id}/similar",
+      "actual": "GET /v1/listings/{id}/similar returns HTTP 404 Not Found",
+      "how_found": "Called GET /v1/listings/100-6000042/similar and received 404",
+      "impact": "Similar listings UI feature must be computed client side or using search filters",
+      "evidence": [
+        "100-6000042"
+      ]
+    },
+    {
+      "endpoint": "/v1/favourites",
+      "category": "missing_endpoint",
+      "documented": "Favourites CRUD endpoints exist at GET /v1/favourites, POST /v1/favourites, DELETE /v1/favourites/{id}",
+      "actual": "All /v1/favourites endpoints return HTTP 404 Not Found",
+      "how_found": "Tested GET, POST, and DELETE calls to /v1/favourites and received 404 Not Found",
+      "impact": "Saved listings functionality must be implemented in client local storage",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/analytics/summary",
+      "category": "missing_endpoint",
+      "documented": "GET /v1/analytics/summary returns pre-computed aggregates for dashboard",
+      "actual": "GET /v1/analytics/summary returns HTTP 404 Not Found",
+      "how_found": "Called GET /v1/analytics/summary and received HTTP 404 Not Found",
+      "impact": "Analytics summary must be aggregated client side from raw listing/rental/project data",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/projects",
+      "category": "units",
+      "documented": "price_min and price_max are in integer rupees",
+      "actual": "price_min and price_max are given as floating-point numbers in Crores or Lakhs (e.g. 1.66 Cr or 94.6 Lakhs)",
+      "how_found": "Inspected price_min and price_max in /v1/projects response objects (e.g. min=1.66, max=4.54)",
+      "impact": "Displaying project prices directly without unit conversion shows inaccurate numbers",
+      "evidence": [
+        "P60001",
+        "P60004",
+        "P60060",
+        "P60090"
+      ]
+    },
+    {
+      "endpoint": "/v1/projects",
+      "category": "consistency",
+      "documented": "total_listings in project object is recomputed whenever a listing is added or withdrawn, so it always agrees with listings in that project",
+      "actual": "total_listings reported in project objects disagrees with actual listing counts for 295 out of 400 projects",
+      "how_found": "Cross-referenced total_listings in /v1/projects against actual count of listings with matching project_id in /v1/listings",
+      "impact": "Project cards display inaccurate listing counts to users",
+      "evidence": [
+        "P60001",
+        "P60002",
+        "P60006",
+        "P60011",
+        "P60012"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "data_quality",
+      "documented": "Every listing record describes valid physical property data",
+      "actual": "18 listing records describe impossible physical data (negative prices, floor > total_floors, or carpet_area > super_built_up_area)",
+      "how_found": "Executed data validation checks across floor/total_floors, prices, and carpet vs super built up area",
+      "impact": "Showing corrupt listings degrades user trust and breaks analytics calculations if not filtered out",
+      "evidence": [
+        "100-6001968",
+        "MAG-6000631",
+        "MAG-6000527",
+        "100-6000338",
+        "SQU-6001477",
+        "ZER-6000669"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "fraud",
+      "documented": "All listings are genuine property sales",
+      "actual": "6 fake clickbait listings exist with prices in thousands (e.g. Rs 5,030 for 1BHK in Mg Road) to capture lead enquiries",
+      "how_found": "Analyzed price-to-carpet-area ratios and identified listings with prices under Rs 30,000",
+      "impact": "Fake listings distort market pricing averages and mislead users",
+      "evidence": [
+        "100-6000578",
+        "100-6000678",
+        "100-6001599",
+        "MAG-6002472",
+        "MAG-6002941",
+        "SQU-6000395"
+      ]
+    },
+    {
+      "endpoint": "/health",
+      "category": "timestamps",
+      "documented": "Returns service status and the server clock",
+      "actual": "server_time carries an explicit +05:30 offset and response includes reference_date field",
+      "how_found": "Called /health before writing other code",
+      "impact": "none - explicit timezone offset enables unambiguous datetime parsing",
+      "evidence": []
+    }
+  ]
+}
