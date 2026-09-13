@@ -1,11 +1,11 @@
 # Ivy Homes — Software Engineering Internship Assignment (September 2026)
 
 **Candidate**: Kartik Kumar  
-**College Email**: 20234057@mnnit.ac.in  
+**College Email**: kartik.20233155@mnnit.ac.in 
 **Assigned City**: Gurgaon  
 **Assigned Locality**: Mg Road  
 **API Key**: `IVY26-DD7ADA724ED4`  
-**Live Demo**: [[https://ivy-homes-assignment.vercel.app](https://ivy-assignment-virid.vercel.app)](https://ivy-assignment-virid.vercel.app)  
+**Live Demo**: (https://ivy-assignment-virid.vercel.app)  
 **Repository**: [https://github.com/kartik1003-afs/ivy-assignment](https://github.com/kartik1003-afs/ivy-assignment)
 
 ---
