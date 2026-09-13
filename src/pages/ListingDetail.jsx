@@ -141,7 +141,7 @@ export default function ListingDetail() {
             </div>
 
             <button
-              onClick={() => toggleFavorite(listing.listing_id)}
+              onClick={() => toggleFavorite(listing)}
               className={`p-3 rounded-full transition-all shadow-md ${
                 favorite ? 'bg-white text-emerald-600' : 'bg-emerald-800/60 text-white hover:bg-emerald-700'
               }`}

@@ -23,31 +23,52 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Update favorites when user changes
+  const [savedObjects, setSavedObjects] = useState(() => {
+    if (!user?.email) return {};
+    const saved = localStorage.getItem(`ivy_saved_objects_${user.email}`);
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // Update favorites & saved objects when user changes
   useEffect(() => {
     if (user?.email) {
       const saved = localStorage.getItem(`ivy_favorites_${user.email}`);
+      const savedObjs = localStorage.getItem(`ivy_saved_objects_${user.email}`);
       setFavorites(saved ? JSON.parse(saved) : []);
+      setSavedObjects(savedObjs ? JSON.parse(savedObjs) : {});
     } else {
       setFavorites([]);
+      setSavedObjects({});
     }
   }, [user?.email]);
 
-  const saveFavoritesToStorage = (newFavs) => {
-    if (user?.email) {
-      localStorage.setItem(`ivy_favorites_${user.email}`, JSON.stringify(newFavs));
-    }
-  };
+  const toggleFavorite = useCallback((item) => {
+    const id = typeof item === 'object' && item !== null ? (item.listing_id || item.id) : item;
+    if (!id) return;
 
-  const toggleFavorite = useCallback((id) => {
     setFavorites((prev) => {
       let updated;
       if (prev.includes(id)) {
-        updated = prev.filter((item) => item !== id);
+        updated = prev.filter((i) => i !== id);
       } else {
         updated = [...prev, id];
       }
-      saveFavoritesToStorage(updated);
+      if (user?.email) {
+        localStorage.setItem(`ivy_favorites_${user.email}`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    setSavedObjects((prev) => {
+      const updated = { ...prev };
+      if (updated[id]) {
+        delete updated[id];
+      } else if (typeof item === 'object' && item !== null) {
+        updated[id] = item;
+      }
+      if (user?.email) {
+        localStorage.setItem(`ivy_saved_objects_${user.email}`, JSON.stringify(updated));
+      }
       return updated;
     });
   }, [user?.email]);
@@ -119,6 +140,7 @@ export const AuthProvider = ({ children }) => {
         user,
         accessToken,
         favorites,
+        savedObjects,
         login,
         logout,
         toggleFavorite,

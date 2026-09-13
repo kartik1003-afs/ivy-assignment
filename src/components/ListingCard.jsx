@@ -64,7 +64,7 @@ export default function ListingCard({ listing }) {
         <button
           onClick={(e) => {
             e.preventDefault();
-            toggleFavorite(listing.listing_id);
+            toggleFavorite(listing);
           }}
           className={`p-2 rounded-full transition-colors ${
             favorite ? 'text-emerald-600 bg-emerald-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'

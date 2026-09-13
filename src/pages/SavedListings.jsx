@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { fetchListings } from '../services/api';
+import { fetchListingById, fetchListings } from '../services/api';
 import ListingCard from '../components/ListingCard';
-import { Bookmark, Loader2, Info } from 'lucide-react';
+import { Bookmark, Loader2 } from 'lucide-react';
 
 export default function SavedListings() {
-  const { user, accessToken, favorites } = useAuth();
+  const { user, accessToken, favorites, savedObjects } = useAuth();
 
   const [savedItems, setSavedItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadFavorites() {
-      if (!accessToken || favorites.length === 0) {
+      if (!favorites || favorites.length === 0) {
         setSavedItems([]);
         setLoading(false);
         return;
@@ -20,11 +20,43 @@ export default function SavedListings() {
 
       setLoading(true);
       try {
-        // Fetch listings to render saved items
-        const res = await fetchListings(accessToken, { limit: 50, offset: 0 });
-        const allFetched = res?.results || [];
-        const filtered = allFetched.filter((l) => favorites.includes(l.listing_id));
-        setSavedItems(filtered);
+        const items = [];
+        const missingIds = [];
+
+        // Check locally cached saved objects first
+        favorites.forEach((id) => {
+          if (savedObjects && savedObjects[id]) {
+            items.push(savedObjects[id]);
+          } else {
+            missingIds.push(id);
+          }
+        });
+
+        // Fetch any missing IDs from the API individually or via search
+        if (missingIds.length > 0 && accessToken) {
+          const fetchedPromises = missingIds.map((id) =>
+            fetchListingById(accessToken, id).catch(() => null)
+          );
+          const fetchedResults = await Promise.all(fetchedPromises);
+          fetchedResults.forEach((res) => {
+            if (res && res.listing_id) {
+              items.push(res);
+            }
+          });
+
+          // Fallback check on general listings if single fetch fails
+          if (items.length < favorites.length) {
+            const listRes = await fetchListings(accessToken, { limit: 50, offset: 0 }).catch(() => null);
+            const allFetched = listRes?.results || [];
+            allFetched.forEach((l) => {
+              if (favorites.includes(l.listing_id) && !items.some((it) => it.listing_id === l.listing_id)) {
+                items.push(l);
+              }
+            });
+          }
+        }
+
+        setSavedItems(items);
       } catch (err) {
         console.error('Error loading saved items:', err);
       } finally {
@@ -33,7 +65,7 @@ export default function SavedListings() {
     }
 
     loadFavorites();
-  }, [accessToken, favorites]);
+  }, [accessToken, favorites, savedObjects]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -67,7 +99,7 @@ export default function SavedListings() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {savedItems.map((item) => (
-            <ListingCard key={item.listing_id} listing={item} />
+            <ListingCard key={item.listing_id || item.id} listing={item} />
           ))}
         </div>
       )}

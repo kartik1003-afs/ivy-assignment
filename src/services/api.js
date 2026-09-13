@@ -1,5 +1,5 @@
-const BASE_URL = 'https://solve.ivy.homes';
-const API_KEY = 'IVY26-DD7ADA724ED4';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://solve.ivy.homes';
+const API_KEY = import.meta.env.VITE_API_KEY || 'IVY26-DD7ADA724ED4';
 
 export async function request(path, options = {}) {
   const { method = 'GET', body, token, queryParams } = options;
