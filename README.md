@@ -5,7 +5,7 @@
 **Assigned City**: Gurgaon  
 **Assigned Locality**: Mg Road  
 **API Key**: `IVY26-DD7ADA724ED4`  
-**Live Demo**: [https://ivy-homes-assignment.vercel.app](https://ivy-homes-assignment.vercel.app)  
+**Live Demo**: [[https://ivy-homes-assignment.vercel.app](https://ivy-assignment-virid.vercel.app)](https://ivy-assignment-virid.vercel.app)  
 **Repository**: [https://github.com/kartik1003-afs/ivy-assignment](https://github.com/kartik1003-afs/ivy-assignment)
 
 ---
